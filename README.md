@@ -1,7 +1,6 @@
 # JobFetcher
-<img width="1906" height="907" alt="image" src="https://github.com/user-attachments/assets/0da2c95a-c255-4749-b0b6-9e1ba761b5a0" />
-<img width="1888" height="905" alt="image" src="https://github.com/user-attachments/assets/00dc287d-c0c9-47c4-95b1-6ebc23267d1f" />
 
+<img width="1906" height="907" alt="image" src="https://github.com/user-attachments/assets/0da2c95a-c255-4749-b0b6-9e1ba761b5a0" />
 
 **Stop fighting LinkedIn. Start hitting ATS endpoints directly.**
 
