@@ -5,6 +5,7 @@ import { normalizeText, uniqueStrings } from "@/lib/utils/text";
 import type { JobSourceAdapter, SourceContext } from "@/lib/sources/types";
 import { mockJobs } from "@/lib/sources/mock-data";
 import { KNOWN_SKILLS, SKILL_ALIASES } from "@/lib/constants";
+import { allMatchesFalsePositive } from "@/lib/skills/negative-context";
 
 // ── Company registry with tiers ──────────────────────────────────────────────
 
@@ -425,6 +426,67 @@ function stripHtml(value: string): string {
 }
 
 /**
+ * Best-effort extraction of the requirements/responsibilities section from a
+ * raw job description. Many JDs start with company boilerplate ("We are India's
+ * leading payments company...") that would otherwise inflate domain-tag skill
+ * counts (e.g. "payments" at 38% for AI engineer roles).
+ *
+ * Strategy: find the first section header that looks like requirements, then
+ * cut off at the first boilerplate header that follows it (benefits, about us,
+ * equal-opportunity, etc.). Falls back to the full text if no headers are found.
+ */
+const REQUIREMENTS_PATTERNS: RegExp[] = [
+  /\brequirements?\b/i,
+  /\bqualifications?\b/i,
+  /\bresponsibilities\b/i,
+  /\bwhat you.ll (bring|need|have|do)\b/i,
+  /\bwhat you will (bring|need|have|do)\b/i,
+  /\bwhat we.re looking for\b/i,
+  /\bmust.?have\b/i,
+  /\btechnical skills?\b/i,
+  /\byou should have\b/i,
+  /\byou will need\b/i,
+  /\bkey skills?\b/i,
+  /\bskills? (required|needed)\b/i,
+];
+
+const BOILERPLATE_PATTERNS: RegExp[] = [
+  /\babout (us|our company|the company)\b/i,
+  /\bwho we are\b/i,
+  /\bwhy join\b/i,
+  /\bwhat we offer\b/i,
+  /\bemployee benefits?\b/i,
+  /\bperks? &/i,
+  /\bcompensation (and|&) benefits?\b/i,
+  /\bequal opportunity\b/i,
+  /\bwe are an equal\b/i,
+  /\bdiversity (and|&) inclusion\b/i,
+];
+
+function extractRequirementsText(text: string): string {
+  // Find the start of the first requirements-like section
+  let reqStart = Infinity;
+  for (const re of REQUIREMENTS_PATTERNS) {
+    const m = re.exec(text);
+    if (m && m.index < reqStart) reqStart = m.index;
+  }
+  if (reqStart === Infinity) return text; // no sections found, use full text
+
+  const afterReq = text.slice(reqStart);
+
+  // Cut off at the first boilerplate header that appears after the requirements
+  // section (require at least 150 chars of content first to avoid false cuts).
+  let cutoff = afterReq.length;
+  for (const re of BOILERPLATE_PATTERNS) {
+    const m = re.exec(afterReq);
+    if (m && m.index > 150 && m.index < cutoff) cutoff = m.index;
+  }
+
+  return afterReq.slice(0, cutoff);
+}
+
+
+/**
  * Pre-compiled skill regexes — built once at module load.
  *
  * Strategy: use lookbehind/lookahead (`(?<![a-z0-9])…(?![a-z0-9])`) so that
@@ -446,11 +508,22 @@ const SKILL_REGEX_MAP = new Map<string, RegExp>(
 );
 
 function extractSkillsFromText(text: string): string[] {
-  const normalized = normalizeText(text);
-  const raw = KNOWN_SKILLS.filter((s) => SKILL_REGEX_MAP.get(s)!.test(normalized));
+  // Strip company boilerplate first so domain terms ("payments", "fintech") in
+  // "About us" sections don't inflate skill counts for technical roles.
+  const relevant = extractRequirementsText(text);
+  const normalized = normalizeText(relevant);
+
+  const raw = KNOWN_SKILLS.filter((s) => {
+    const re = SKILL_REGEX_MAP.get(s)!;
+    // Fast path for most skills: no negative rules, just test presence
+    if (!re.test(normalized)) return false;
+    // For skills with negative rules, check that at least one occurrence
+    // is NOT in a verb/idiom context ("excel at X", "go ahead", etc.).
+    // allMatchesFalsePositive returns true only when EVERY match is a false positive.
+    return !allMatchesFalsePositive(s, normalized, re);
+  });
+
   // Normalise aliases: "ml" -> "machine learning", "go" -> "golang", etc.
-  // uniqueStrings deduplicates so if both "ml" and "machine learning" appear,
-  // they merge into a single "machine learning" entry.
   return uniqueStrings(raw.map((s) => SKILL_ALIASES[s] ?? s));
 }
 

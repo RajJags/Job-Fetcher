@@ -1,7 +1,13 @@
 import { rankJobs } from "@/lib/ranking/score";
 import { aiRerankJobs } from "@/lib/ranking/ai-rerank";
+import { batchHaikuEnrich } from "@/lib/skills/haiku-extractor";
 import { sourceAdapters, buildAdapterForCustomSite, ADZUNA_ENABLED, configuredSourceSummary } from "@/lib/sources/adapters";
 import type { CandidateProfile, CustomSite, JobRecord, SearchFilters, SearchResponse } from "@/types/jobs";
+
+// Set HAIKU_SKILLS=true in .env.local to enable Haiku-based skill enrichment.
+// When enabled, job skills arrays are enriched post-dedup using Claude Haiku
+// with a file-based sha256 cache so each unique JD is only processed once.
+const HAIKU_SKILLS_ENABLED = process.env.HAIKU_SKILLS === "true";
 
 // ── Server-side cache ─────────────────────────────────────────────────────────
 // NOTE: on Vercel (serverless), each Lambda invocation may be a fresh Node process
@@ -65,7 +71,21 @@ export async function aggregateJobs(args: {
   );
 
   const jobs = fetched.flatMap((r) => r.status === "fulfilled" ? r.value : []);
-  const deduped = dedupeJobs(jobs);
+  let deduped = dedupeJobs(jobs);
+
+  // ── 1b. Optional Haiku skill enrichment ───────────────────────────────────
+  // When HAIKU_SKILLS=true, replace each job's regex-extracted skills with
+  // a Haiku-verified set. Results are file-cached (.skill-cache/) so the API
+  // is only called once per unique JD; subsequent calls are instant.
+  if (HAIKU_SKILLS_ENABLED && deduped.length > 0) {
+    const enriched = await batchHaikuEnrich(
+      deduped.map((j) => ({ id: j.id, description: j.description, skills: j.skills }))
+    );
+    deduped = deduped.map((job) => {
+      const skills = enriched.get(job.id);
+      return skills ? { ...job, skills } : job;
+    });
+  }
 
   // ── 2. Rule-based ranking — hard filters already applied inside adapters ───
   // This produces a solid initial ordering and acts as a pre-filter so the AI
@@ -73,7 +93,7 @@ export async function aggregateJobs(args: {
   const now = Date.now();
   const ruleRanked = rankJobs({ jobs: deduped, filters, profile, now });
 
-  // ── 3. AI reranking — only when a resume profile is available ──────────────
+  // -- 3. AI reranking - only when a resume profile is available ---------------
   // Claude Haiku semantically scores each job against the candidate's full
   // profile, understanding context that keyword counts can't capture.
   // Falls back to rule-based order silently on timeout or API error.

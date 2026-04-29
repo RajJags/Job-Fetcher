@@ -1608,6 +1608,263 @@ button, input, select, textarea { font: inherit; }
 .si-sub   { margin: 0; font-size: .86rem; color: var(--text-muted); max-width: 400px; line-height: 1.6; }
 
 /* ── Responsive ──────────────────────────────────────────────── */
+/* ============================================================
+   SKILLS TAB v2 - new components
+   ============================================================ */
+
+/* -- Manual target title override --------------------------------- */
+.stc-manual-row {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  border-top: 1px solid var(--border);
+  padding-top: 10px;
+}
+.stc-manual-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: .75rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+  letter-spacing: -.005em;
+  transition: color 120ms;
+}
+.stc-manual-toggle:hover { color: var(--blue); }
+.stc-manual-active {
+  font-size: .68rem;
+  font-weight: 700;
+  color: var(--blue);
+  background: var(--blue-soft);
+  border: 1px solid var(--blue-bd);
+  border-radius: var(--r-full);
+  padding: 1px 7px;
+}
+.stc-manual-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.stc-manual-input {
+  font-size: .84rem;
+  width: 100%;
+}
+.stc-manual-hint {
+  margin: 0;
+  font-size: .72rem;
+  color: var(--text-muted);
+  line-height: 1.5;
+}
+
+/* -- Confidence BLOCKING banner ----------------------------------- */
+.confidence-blocker {
+  background: #fff8ed;
+  border: 1.5px solid #fbbf24;
+  border-radius: var(--r-xl);
+  padding: 18px 20px;
+  display: flex;
+  gap: 0;
+}
+.cb-content {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  width: 100%;
+}
+.cb-icon {
+  font-size: 1.3rem;
+  flex-shrink: 0;
+  margin-top: 2px;
+  color: var(--amber);
+}
+.cb-body {
+  flex: 1;
+  min-width: 0;
+}
+.cb-title {
+  display: block;
+  font-size: .9rem;
+  font-weight: 800;
+  color: #92400e;
+  margin-bottom: 6px;
+  letter-spacing: -.01em;
+}
+.cb-text {
+  margin: 0 0 5px;
+  font-size: .8rem;
+  color: #78350f;
+  line-height: 1.6;
+}
+.cb-show-btn {
+  flex-shrink: 0;
+  align-self: center;
+  padding: 7px 16px;
+  font-size: .78rem;
+  font-weight: 700;
+  background: var(--amber);
+  color: #fff;
+  border: none;
+  border-radius: var(--r-md);
+  cursor: pointer;
+  white-space: nowrap;
+  transition: opacity 130ms;
+}
+.cb-show-btn:hover { opacity: .88; }
+
+/* -- Sample WARNING banner (50-100 range) ------------------------- */
+.sample-warning-banner {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  background: var(--blue-soft);
+  border: 1px solid var(--blue-bd);
+  border-radius: var(--r-lg);
+  padding: 11px 16px;
+  font-size: .8rem;
+  color: var(--blue-dark, var(--blue));
+  line-height: 1.5;
+}
+.swb-icon {
+  font-size: 1rem;
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+.swb-text { flex: 1; }
+
+/* -- Top employers in market health bar --------------------------- */
+.mhb-employers {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 5px;
+  margin-top: 5px;
+  font-size: .72rem;
+}
+.mhbe-label {
+  font-weight: 600;
+  color: var(--text-2);
+  flex-shrink: 0;
+}
+.mhbe-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  padding: 2px 8px;
+  border-radius: var(--r-full);
+  background: rgba(0,0,0,.06);
+  color: var(--text-2);
+  font-size: .7rem;
+  font-weight: 600;
+  cursor: default;
+}
+.mhbe-chip.dominant {
+  background: #fef3c7;
+  border: 1px solid #fbbf24;
+  color: #92400e;
+}
+.mhbe-warn {
+  font-size: .68rem;
+  font-weight: 600;
+  color: #b45309;
+  font-style: italic;
+}
+
+/* -- Blocked score ring (low sample) ------------------------------ */
+.mhb-ring-blocked { opacity: .4; }
+
+/* -- (n/total) count in skill rows -------------------------------- */
+.sr-count {
+  font-size: .68rem;
+  color: var(--text-muted);
+  font-weight: 500;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+/* -- Must-have bucket gated notice -------------------------------- */
+.stg-hidden-notice {
+  padding: 12px 14px;
+  background: var(--surface-2, var(--surface));
+  border: 1px dashed var(--border-2, var(--border));
+  border-radius: var(--r-md);
+  font-size: .78rem;
+  color: var(--text-muted);
+  line-height: 1.5;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.stg-show-btn {
+  font-size: .73rem;
+  font-weight: 700;
+  color: var(--amber);
+  background: none;
+  border: 1px solid var(--amber-bd);
+  border-radius: var(--r-full);
+  padding: 3px 11px;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 120ms;
+}
+.stg-show-btn:hover { background: var(--amber-soft); }
+
+/* -- Gap score blocked card --------------------------------------- */
+.gap-score-blocked {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 14px 16px;
+  background: var(--surface-2, #f8f8fa);
+  border: 1px dashed var(--border-2, var(--border));
+  border-radius: var(--r-lg);
+}
+.gsb-text {
+  font-size: .8rem;
+  color: var(--text-muted);
+  font-style: italic;
+}
+.gsb-show-btn {
+  font-size: .75rem;
+  font-weight: 700;
+  color: var(--blue);
+  background: none;
+  border: 1px solid var(--blue-bd);
+  border-radius: var(--r-full);
+  padding: 4px 14px;
+  cursor: pointer;
+  transition: background 120ms;
+}
+.gsb-show-btn:hover { background: var(--blue-soft); }
+
+/* -- (n/total) in gap pills --------------------------------------- */
+.gp-n {
+  font-size: .62rem;
+  font-weight: 500;
+  opacity: .55;
+}
+
+/* -- Gap panel override hint -------------------------------------- */
+.sgp-override-hint {
+  font-size: .71rem;
+  font-weight: 500;
+  color: var(--blue);
+  background: var(--blue-soft);
+  border: 1px solid var(--blue-bd);
+  border-radius: var(--r-full);
+  padding: 2px 8px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 160px;
+}
+
+
 @media (max-width: 1080px) {
   :root { --sidebar-w: 256px; }
   .main { padding: 16px 18px; }
