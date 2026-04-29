@@ -2,7 +2,7 @@
 
 An India-focused job aggregator that reads directly from company ATS career pages. No LinkedIn wall, no Naukri paywall, no scraping. Search across 85+ companies in one place, upload your resume for personalised ranking, and scan the live market for skill demand.
 
-**Live:** https://job-fetcher-rajjags.vercel.app
+**Live:** [https://job-fetcher-rajjags.vercel.app](https://job-fetcher-eight.vercel.app/)
 
 ---
 
