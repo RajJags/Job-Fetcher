@@ -40,3 +40,7 @@ large/
 
 # Haiku skill extraction cache (sha256-keyed JD results)
 .skill-cache/
+
+# scratch / notes (not part of the codebase)
+linkedin-post.md
+*.draft.md

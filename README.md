@@ -1,48 +1,54 @@
-# JobFetcher
+# Job Fetcher
 
-An India-focused job aggregator that pulls listings directly from company ATS career pages — no LinkedIn, no scraping, no paywalls. Upload your resume and get results ranked by how well they match your actual profile.
+An India-focused job aggregator that reads directly from company ATS career pages. No LinkedIn wall, no Naukri paywall, no scraping. Search across 85+ companies in one place, upload your resume for personalised ranking, and scan the live market for skill demand.
 
-**Stack:** Next.js 15 · TypeScript · Claude Haiku (AI resume parsing) · Adzuna India API (optional)
-
----
-
-## What it does
-
-JobFetcher queries 85+ company career pages in parallel across five ATS platforms (Lever, Greenhouse, Ashby, Workday, SmartRecruiters), deduplicates and normalizes the results, then ranks them against your resume. All filtering happens server-side; sorting happens instantly client-side with no re-fetch.
-
-### Filters
-
-| Filter | Type | Behaviour |
-|---|---|---|
-| Job title | Text search | Searches title, description, skills, company name |
-| Location | Text search | Hard filter — strict substring match on job location |
-| Experience | Dropdown (0–1 → 10+ yrs) | Hard filter — parsed from job description text |
-| Min salary | Slider (0–100 LPA) | Semi-hard — excludes jobs clearly below your target |
-| Job category | Dropdown | Hard filter — Product, Engineering, Data, Design, Sales, Marketing, Ops, IT, Finance, HR |
-| Company type | Multi-select | Tier 1 Product · Tier 2 / Startup · Global MNC · Services |
-| Date posted | Pills above results | 24h · 1 week · 1 month · 3 months |
-
-### Resume matching
-
-Upload a PDF, DOCX, or TXT resume. Claude Haiku extracts 50–80 match keywords (skills, frameworks, tools, domains, role variants) and uses them to re-rank results by relevance. The resume does **not** auto-fill any filter inputs — it only influences ranking. A "View all keywords" panel lets you inspect exactly what was extracted.
-
-### Company coverage (built-in)
-
-| ATS | Count | Examples |
-|---|---|---|
-| Lever | 30 | Razorpay, Meesho, BrowserStack, Groww, Swiggy, Zomato, Atlassian |
-| Greenhouse | 24 | Freshworks, Postman, Netflix, Stripe, Uber, Databricks, Snowflake |
-| Ashby | 9 | Jar, Porter, Nykaa, CrowdStrike, Innovaccer |
-| Workday | 10 | Adobe, Cisco, PayPal, Visa, Goldman Sachs, Walmart, JP Morgan |
-| SmartRecruiters | 10 | HCLTech, Capgemini, LTIMindtree, Bosch, Siemens, Philips |
-
-Add unlimited custom career pages from the sidebar UI — paste a Lever, Greenhouse, Ashby, or Workday URL and it's included in every search, persisted in localStorage.
+**Live:** https://job-fetcher-rajjags.vercel.app
 
 ---
 
-## Getting started
+## For job seekers
 
-### 1. Clone and install
+### What you get
+
+- **Jobs tab** -- search roles across Razorpay, Meesho, BrowserStack, Groww, Freshworks, Postman, Netflix, Stripe, Databricks, Snowflake, and 75+ more in a single query
+- **Skills tab** -- scan the live market for a role and see which skills are actually required, with employer-weighted percentages so one dominant company cannot skew the data
+- **Resume upload** -- upload your PDF, DOCX, or TXT resume and results re-rank instantly by how well each job matches your profile
+
+### Searching jobs
+
+1. Type a role in the search bar -- `Backend Engineer`, `Data Scientist`, `Product Manager`
+2. Optionally set location, experience range, minimum salary, and company type
+3. Hit **Search** -- results come from 85+ live career pages in about 5 seconds
+4. Upload your resume on the left to personalise the ranking
+
+### Skills Intelligence tab
+
+1. Click the **Skills** tab at the top
+2. Type a target role and hit **Scan market**
+3. See which skills appear in what percentage of real listings, grouped by Must-have / Valuable / Niche
+4. Each percentage shows the raw count `(17/34)` so you can judge sample quality
+5. Upload your resume first and the right panel shows your personal skill gap against the market
+
+**Sample size note:** results below 50 title-matched listings show a warning and hide the must-have bucket. Small samples are directional only.
+
+### Adding your own companies
+
+Paste any Lever, Greenhouse, Ashby, or Workday career page URL into the **Add career site** field in the sidebar. It is included in every search and persists in your browser.
+
+---
+
+## For developers
+
+### Tech stack
+
+| Layer | Choice |
+|---|---|
+| Framework | Next.js 15, App Router, TypeScript |
+| AI | Claude Haiku (`claude-haiku-4-5-20251001`) -- resume parsing + optional skill extraction |
+| Extra jobs | Adzuna India API (optional) -- aggregates Naukri, TimesJobs, Indeed India |
+| Infrastructure | None -- no database, no auth, no background workers |
+
+### Getting started
 
 ```bash
 git clone https://github.com/RajJags/Job-Fetcher.git
@@ -50,169 +56,143 @@ cd Job-Fetcher
 npm install
 ```
 
-### 2. Configure environment variables
-
 Create `.env.local` in the project root:
 
 ```env
-# Required for AI resume parsing
-# Free API key at https://console.anthropic.com
+# Required for AI resume parsing (regex fallback used if absent)
+# Free key at https://console.anthropic.com
 ANTHROPIC_API_KEY=sk-ant-...
 
-# Optional — adds Adzuna India results (Naukri, TimesJobs, Indeed India, 50+ boards)
-# Free tier: 1000 searches/month — register at https://developer.adzuna.com
+# Optional: adds Adzuna India results (1,000 free searches/month)
+# Register at https://developer.adzuna.com
 ADZUNA_APP_ID=your_app_id
 ADZUNA_APP_KEY=your_app_key
+
+# Optional: Haiku-based skill extraction (more accurate, sha256 file-cached)
+# HAIKU_SKILLS=true
 ```
-
-The app runs without `ANTHROPIC_API_KEY` — resume parsing falls back to a regex extractor. It also runs without the Adzuna keys — you just get fewer results.
-
-### 3. Run locally
 
 ```bash
-npm run dev
+npm run dev        # http://localhost:3000
+npm run typecheck  # tsc --noEmit
+npm run build      # production build
 ```
 
-Open [http://localhost:3000](http://localhost:3000).
+### Project structure
 
----
-
-## Customising for your own fork
+```
+src/
++-- app/
+|   +-- api/
+|   |   +-- parse-resume/route.ts   POST: extract CandidateProfile from uploaded file
+|   |   +-- search-jobs/route.ts    POST: run all adapters, dedupe, rank
+|   +-- globals.css                 Single CSS file, custom design tokens
+|   +-- page.tsx
++-- components/
+|   +-- job-fetcher-app.tsx         Jobs tab: sidebar filters + job cards
+|   +-- skills-tab.tsx              Skills tab: market scan + gap analysis
++-- lib/
+|   +-- constants.ts                KNOWN_SKILLS (~200 terms) + RoleCategory taxonomy
+|   +-- normalization/
+|   |   +-- salary.ts               Free-text salary -> LPA conversion
+|   +-- ranking/
+|   |   +-- ai-rerank.ts            Haiku semantic reranking (top 40 results)
+|   |   +-- score.ts                Weighted rule-based scoring
+|   +-- resume/
+|   |   +-- ai-extract.ts           Haiku resume parsing
+|   |   +-- extract.ts              Regex fallback extractor
+|   +-- search/
+|   |   +-- aggregate.ts            Parallel adapter orchestration, 10-min cache
+|   +-- skills/
+|   |   +-- haiku-extractor.ts      Haiku skill extraction with sha256 file cache
+|   |   +-- negative-context.ts     False-positive suppression for regex matching
+|   +-- sources/
+|   |   +-- adapters.ts             Five ATS adapters + hard filter logic + company lists
+|   |   +-- mock-data.ts            Offline development fixtures
+|   |   +-- types.ts                JobSourceAdapter interface
++-- types/
+    +-- jobs.ts                     SearchFilters, JobRecord, CandidateProfile, RankedJob
+    +-- resume.ts                   Parsed resume shape
+```
 
 ### Adding companies
 
-All company lists live in `src/lib/sources/adapters.ts`. Find the right ATS array and add an entry.
+All company lists live in `src/lib/sources/adapters.ts`. Identify the ATS from the careers page URL and add an entry to the matching array:
 
-**How to find a company's ATS:** visit their careers page and check the URL structure.
-
-**Lever** — URL looks like `jobs.lever.co/{slug}`
+| URL pattern | ATS | Array |
+|---|---|---|
+| `jobs.lever.co/{slug}` | Lever | `LEVER_SITES` |
+| `boards.greenhouse.io/{token}` | Greenhouse | `GREENHOUSE_BOARDS` |
+| `jobs.ashbyhq.com/{orgId}` | Ashby | `ASHBY_ORGS` |
+| `{tenant}.wd{n}.myworkdayjobs.com/en-US/{board}` | Workday | `WORKDAY_TENANTS` |
+| `careers.smartrecruiters.com/{id}` | SmartRecruiters | `SMARTRECRUITERS_COMPANIES` |
 
 ```typescript
+// Example -- Lever
 const LEVER_SITES: LeverSite[] = [
   { company: "YourCompany", site: "your-lever-slug" },
 ];
-```
 
-**Greenhouse** — URL looks like `boards.greenhouse.io/{token}`
-
-```typescript
-const GREENHOUSE_BOARDS: GreenBoard[] = [
-  { company: "YourCompany", boardToken: "yourtoken" },
-];
-```
-
-**Ashby** — URL looks like `jobs.ashbyhq.com/{orgId}`
-
-```typescript
-const ASHBY_ORGS: AshbyOrg[] = [
-  { company: "YourCompany", orgId: "your-org-id" },
-];
-```
-
-**Workday** — URL looks like `{tenant}.wd{n}.myworkdayjobs.com/en-US/{board}`
-
-```typescript
-const WORKDAY_TENANTS: WorkdayTenant[] = [
-  { company: "YourCompany", tenant: "yourcompany", board: "External", wdNum: 5 },
-];
-```
-
-**SmartRecruiters** — URL looks like `careers.smartrecruiters.com/{identifier}`
-
-```typescript
-const SMARTRECRUITERS_COMPANIES: SmartRecruiterCompany[] = [
-  { company: "YourCompany", identifier: "YourCompany" },
-];
-```
-
-To set a company's tier (affects the badge colour and company type filter), update `COMPANY_META` near the top of the same file:
-
-```typescript
+// Set tier for badge colour + company-type filter
 const COMPANY_META: Record<string, CompanyMeta> = {
   YourCompany: { tier: "tier1" }, // tier1 | tier2 | mnc | services | startup
 };
 ```
 
-### Expanding keyword coverage
+### Expanding the skill taxonomy
 
-`src/lib/constants.ts` exports `KNOWN_SKILLS` — a master list of ~200 terms used for both resume parsing and job description keyword extraction. Add domain-specific skills here and they'll be picked up everywhere automatically.
+`src/lib/constants.ts` exports three objects that control skill matching everywhere:
 
-### Tuning the AI resume prompt
+- **`KNOWN_SKILLS`** -- master list (~200 terms). Add a term here and it is matched in job descriptions and resume extraction automatically.
+- **`SKILL_CATEGORIES`** -- tags each skill with one or more `RoleCategory` values (`backend`, `frontend`, `ai_llm`, `data`, `devops`, ...). Skills tagged `product`-only are suppressed when scanning for engineering roles.
+- **`SKILL_ALIASES`** -- maps variants to canonical names: `"ml" -> "machine learning"`, `"go" -> "golang"`.
 
-`src/lib/resume/ai-extract.ts` contains the prompt sent to Claude Haiku. Edit `buildUserPrompt()` to bias extraction toward a specific domain (e.g., emphasise finance-specific terms, or adjust the keyword count target).
+### False-positive suppression
 
-### Changing ranking weights
+`src/lib/skills/negative-context.ts` prevents regex from matching skills used as verbs or idioms.
 
-`src/lib/ranking/score.ts` exposes the scoring formula. Adjust the weights or add new signals:
+Examples of what is suppressed vs kept:
+
+| Text in JD | Outcome |
+|---|---|
+| `excel in fast-paced environments` | Suppressed (verb) |
+| `Microsoft Excel proficiency` | Kept (tool) |
+| `go ahead and build the pipeline` | Suppressed (phrasal verb) |
+| `proficiency in Go programming` | Kept |
+| `swift response to incidents` | Suppressed (adjective) |
+| `Swift and SwiftUI for iOS` | Kept |
+
+`allMatchesFalsePositive()` checks every occurrence in the document, so a JD containing both patterns keeps the skill.
+
+### Haiku skill extraction (optional)
+
+Set `HAIKU_SKILLS=true` in `.env.local`. Haiku reads each job description and returns only skills explicitly required in the role -- more accurate than regex alone. Results are sha256-cached to `.skill-cache/` (gitignored) so each unique JD is only processed once.
+
+### Ranking formula
+
+Rule-based score applied to all results (`src/lib/ranking/score.ts`):
 
 ```
-score = 0.35 × roleMatch + 0.35 × skillMatch + 0.15 × seniorityMatch
-      + 0.10 × recency   + 0.05 × salaryFit
+score = 0.35 x role_match  + 0.35 x skill_match   + 0.15 x seniority_match
+      + 0.10 x recency      + 0.05 x salary_fit
 ```
 
----
+When a resume is present, Claude Haiku reranks the top 40 results semantically (`src/lib/ranking/ai-rerank.ts`). Falls back to rule-based order silently on timeout or API error.
 
-## Architecture
+### Employer concentration weighting
 
-```
-src/
-├── app/
-│   ├── api/
-│   │   ├── parse-resume/route.ts   # POST — extracts profile from uploaded file
-│   │   └── search-jobs/route.ts    # POST — runs all adapters, ranks results
-│   ├── globals.css
-│   └── page.tsx
-├── components/
-│   └── job-fetcher-app.tsx         # Single-page UI — sidebar filters + job cards
-├── lib/
-│   ├── constants.ts                # KNOWN_SKILLS master list (~200 terms)
-│   ├── normalization/
-│   │   └── salary.ts               # Text → LPA conversion
-│   ├── ranking/
-│   │   └── score.ts                # Weighted relevance scoring
-│   ├── resume/
-│   │   ├── ai-extract.ts           # Claude Haiku API call + JSON parsing
-│   │   └── extract.ts              # Regex fallback extractor
-│   ├── search/
-│   │   └── aggregate.ts            # Parallel adapter orchestration + 3-min cache
-│   └── sources/
-│       ├── adapters.ts             # All five ATS adapters + hard filter logic
-│       └── types.ts                # JobSourceAdapter interface
-└── types/
-    └── jobs.ts                     # SearchFilters, JobRecord, CandidateProfile, etc.
-```
+In the Skills tab, each listing is weighted by `1 / sqrt(employer_listing_count)` so one company with 20 postings contributes ~4.5 effective listings instead of 20. The raw count `(n/total)` is shown alongside every weighted percentage so the underlying data is always visible.
 
-**Caching:** Results are cached in-memory for 3 minutes keyed on the full filter set + resume keywords. Changing the sort order never triggers a re-fetch — sorting is applied client-side.
+### API
 
-**No database.** Everything is request-scoped. There's no login, no server-side persistence. Custom career sites are stored in the user's localStorage.
+**`POST /api/parse-resume`** -- multipart/form-data with a `file` field (PDF, DOCX, or TXT).
 
----
+Returns `{ profile: CandidateProfile }` containing: `skills`, `inferredRoles`, `yearsOfExperience`, `seniority`, `location`, `domains`, `education`, `matchKeywords`.
 
-## API reference
+**`POST /api/search-jobs`**
 
-### `POST /api/parse-resume`
-
-Accepts `multipart/form-data` with a `file` field (PDF, DOCX, or TXT).
-
+Request:
 ```json
-{
-  "profile": {
-    "skills": ["Spring Boot", "Kafka", "PostgreSQL"],
-    "inferredRoles": ["Backend Engineer", "Senior Software Engineer"],
-    "yearsOfExperience": 5,
-    "seniority": "mid",
-    "location": "Bangalore",
-    "domains": ["fintech", "saas"],
-    "education": ["B.Tech Computer Science"],
-    "matchKeywords": ["spring boot", "kafka", "postgresql", "microservices", "..."]
-  }
-}
-```
-
-### `POST /api/search-jobs`
-
-```json
-// Request body
 {
   "filters": {
     "role": "backend engineer",
@@ -224,36 +204,32 @@ Accepts `multipart/form-data` with a `file` field (PDF, DOCX, or TXT).
     "postedWithin": "1m",
     "remoteOnly": false
   },
-  "profile": {},       // optional CandidateProfile
-  "customSites": []    // optional user-added sites from localStorage
-}
-
-// Response
-{
-  "jobs": [],          // RankedJob[] — JobRecord + score + matchedSkills
-  "totalFetched": 312,
-  "companyCount": 85,
-  "adzunaEnabled": true
+  "profile": null,
+  "customSites": []
 }
 ```
 
----
+Response: `{ jobs: RankedJob[], totalFetched, companyCount, adzunaEnabled, aiRanked }`
 
-## Why not LinkedIn / Naukri
+Results are cached in-memory for 10 minutes keyed on the full filter set. Changing sort order on the client never triggers a re-fetch.
 
-Both platforms use login walls, aggressive anti-bot systems, and change their internal APIs without notice. This project covers the same market through:
+### Deploying
 
-- **Direct ATS APIs** — Lever, Greenhouse, Ashby, Workday, and SmartRecruiters all expose stable, public job board endpoints with no auth required
-- **Adzuna India** — a licensed feed that aggregates Naukri, TimesJobs, Indeed India, and 50+ other boards without any scraping
-
-This gives stable, compliant coverage that won't break overnight.
-
----
-
-## Deploying
-
-Standard Next.js — deploy to Vercel in one click:
+Standard Next.js -- one-click Vercel deploy:
 
 [![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https://github.com/RajJags/Job-Fetcher)
 
-Set `ANTHROPIC_API_KEY` (and optionally the Adzuna keys) as environment variables in your Vercel project settings. No other infrastructure needed — no database, no queue, no background workers.
+Set `ANTHROPIC_API_KEY` in Vercel environment variables (and optionally `ADZUNA_APP_ID` / `ADZUNA_APP_KEY`). No other infrastructure required.
+
+### Why not LinkedIn / Naukri
+
+Both use login walls and change their internal APIs without notice. This project uses:
+
+- **Direct ATS APIs** -- Lever, Greenhouse, Ashby, Workday, and SmartRecruiters all expose stable, unauthenticated public job board endpoints
+- **Adzuna India** -- a licensed feed aggregating Naukri, TimesJobs, Indeed India, and 50+ boards without scraping
+
+---
+
+## Contributing
+
+Issues and PRs welcome. When adding companies, verify the ATS endpoint returns data before submitting -- some career pages sit on the ATS domain but require a private API key.
